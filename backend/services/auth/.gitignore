@@ -6,9 +6,6 @@ serviceAccountKey.json
 .env.production.local
 .env.local
 
-serviceAccountKey.json
-.env
-
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
