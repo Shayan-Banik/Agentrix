@@ -1,10 +1,11 @@
 package- 
 mongoose
 express, dotenv, nodemon
-morgan
+morgan, crypto
 
 in /gateway -> npm i express-http-proxy
-in /service -> npm i firebase-admin
+in /service -> npm i firebase-admin 
+--> serviceAccountKey.json is used to store the keys of firebase
 
 express-http-proxy is used in Node.js + Express to forward HTTP requests from one server to another server.
 Simple example

@@ -4,20 +4,21 @@ dotenv.config();
 import morgan from "morgan";
 import cors from "cors";
 import proxy from "express-http-proxy";
-
-const app = express();
+import cookieParser from "cookie-parser";
 
 const port = process.env.PORT || 8000;
 
+const app = express();
+
 app.use(morgan("dev"));
-app.use(cors());
+app.use(cors({
+    origin: process.env.FRONTEND_URL,
+    credentials:true
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/api/auth", proxy(process.env.AUTH_SERVICE_URL));
-
-app.get("/", (req, res) => {
-    res.send("Gateway is running");
-})
 
 
 app.listen(port, () => {
