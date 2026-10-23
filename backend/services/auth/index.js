@@ -13,9 +13,9 @@ app.use(express.json());
 app.use("/", authRouter)
 
 
+await connectDB();
+
 app.listen(port, () => {
-    connectDB();
     console.log(`Auth started on port ${port}`);
 });
-
 

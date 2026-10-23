@@ -51,3 +51,6 @@ Verifies that the token sent to your backend is valid.
 - **Admin SDK = Backend verification and administration.**
 
 In a MERN project, you can use both together: React logs in the user, and Express verifies the user's token before returning protected data.
+
+
+run docker-compose file-> docker compose up
