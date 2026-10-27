@@ -1,65 +1,29 @@
-import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { FiShare2, FiLoader, FiAlertCircle } from "react-icons/fi";
-import { signInWithPopup } from "firebase/auth";
-
-import api from "../utils/axios.js";
-import { auth, googleProvider } from "../utils/firebase.js";
+import { useSelector } from "react-redux";
 import { APP_NAME, AGENTS } from "../constants/constants.js";
-import { useDispatch, useSelector } from "react-redux";
-import { setUserData } from "../redux/user.slice.js";
+import ChatLayout from "../components/ChatLayout.jsx";
+import useGoogleAuth from "../hooks/useGoogleAuth.js";
 
-export default function Home() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const dispatch = useDispatch();
-  const userData = useSelector(state => state.user.userData);
-
-  const handleLogin = async (token) => {
-    try {
-      const { data } = await api.post("/api/auth/login", { token });
-      dispatch(setUserData(data));
-      console.log(data);
-    } catch (error) {
-      console.error("Error during login:", error);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      let token = await result.user.getIdToken();
-      console.log("Google Sign-In successful. Token:", token);
-      await handleLogin(token);
-      console.log("Google Sign-In successful:", result);
-    } catch (error) {
-      console.error("Error during Google Sign-In:", error);
-      setError("Failed to sign in with Google. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+function SignInScreen({ loading, error, onSignIn }) {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-white px-6 py-10 text-neutral-900 dark:bg-[#212121] dark:text-neutral-100 w-screen">
-      {/* soft glow behind the card */}
+    <div className="relative flex min-h-screen w-screen items-center justify-center overflow-hidden bg-[#0b101a] px-6 py-10 text-slate-100">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-[22%] h-105 w-155 -translate-x-1/2 rounded-full bg-emerald-500/10 blur-3xl dark:bg-emerald-500/15"
+        className="pointer-events-none absolute left-1/2 top-[22%] h-105 w-155 -translate-x-1/2 rounded-full bg-indigo-500/20 blur-3xl"
       />
-      {
-        userData ? <h1>Home</h1> : (
-          <main className="relative w-full max-w-sm text-center">
+
+      <main className="relative w-full max-w-sm text-center">
         <div
           aria-hidden="true"
-          className="mx-auto mb-6 grid h-12 w-12 place-items-center rounded-2xl bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900">
-          <FiShare2 className="h-6 w-6" />
+          className="mx-auto mb-6 grid h-16 w-16 place-items-center text-indigo-100 drop-shadow-[0_0_24px_rgba(129,140,248,0.75)]">
+          <FiShare2 className="h-12 w-12" strokeWidth={1.5} />
         </div>
 
-        <h1 className="text-3xl font-semibold tracking-tight">Welcome back</h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-neutral-500 dark:text-neutral-400">
+        <h1 className="text-3xl font-bold tracking-tight text-white">
+          Welcome back
+        </h1>
+        <p className="mt-2 text-[15px] leading-relaxed text-slate-400">
           Sign in to work with your team of AI agents on {APP_NAME}.
         </p>
 
@@ -69,9 +33,9 @@ export default function Home() {
           {AGENTS.map((name, i) => (
             <li
               key={name}
-              className="flex items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
+              className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-slate-400">
               <span
-                className="h-1.5 w-1.5 rounded-full bg-emerald-500 motion-safe:animate-pulse"
+                className="h-1.5 w-1.5 rounded-full bg-indigo-400 motion-safe:animate-pulse"
                 style={{ animationDelay: `${i * 400}ms` }}
               />
               {name}
@@ -81,10 +45,10 @@ export default function Home() {
 
         <button
           type="button"
-          onClick={handleGoogleSignIn}
+          onClick={onSignIn}
           disabled={loading}
           aria-busy={loading}
-          className="mt-8 flex w-full items-center justify-center gap-3 rounded-full border border-neutral-300 bg-white px-5 py-3.5 text-base font-medium text-neutral-900 transition hover:bg-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-progress disabled:opacity-70 dark:border-neutral-600 dark:bg-[#2f2f2f] dark:text-neutral-100 dark:hover:bg-[#3a3a3a] dark:focus-visible:ring-offset-[#212121]">
+          className="mt-8 flex w-full items-center justify-center gap-3 rounded-full border border-white/10 bg-[#1a2133] px-5 py-3.5 text-base font-medium text-slate-100 shadow-lg shadow-black/30 transition hover:bg-[#222b42] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b101a] active:scale-[0.99] disabled:cursor-progress disabled:opacity-70">
           {loading ? (
             <FiLoader className="h-5 w-5 motion-safe:animate-spin" />
           ) : (
@@ -95,32 +59,40 @@ export default function Home() {
 
         <div className="mt-3 min-h-5" role="alert" aria-live="polite">
           {error && (
-            <p className="flex items-start justify-center gap-1.5 text-sm text-red-500">
+            <p className="flex items-start justify-center gap-1.5 text-sm text-red-400">
               <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{error}</span>
             </p>
           )}
         </div>
 
-        <p className="mt-6 text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
+        <p className="mt-6 text-xs leading-relaxed text-slate-500">
           By continuing, you agree to our{" "}
           <a
             href="/terms"
-            className="underline underline-offset-2 hover:text-neutral-900 dark:hover:text-neutral-200">
+            className="underline underline-offset-2 hover:text-slate-200">
             Terms
           </a>{" "}
           and{" "}
           <a
             href="/privacy"
-            className="underline underline-offset-2 hover:text-neutral-900 dark:hover:text-neutral-200">
+            className="underline underline-offset-2 hover:text-slate-200">
             Privacy Policy
           </a>
           .
         </p>
       </main>
-        )
-      }
-      
     </div>
   );
+}
+
+export default function Home() {
+  const user = useSelector((state) => state.user.userData);
+  const { loading, error, signIn, signOut } = useGoogleAuth();
+
+  if (user) {
+    return <ChatLayout user={user} onLogout={signOut} />;
+  }
+
+  return <SignInScreen loading={loading} error={error} onSignIn={signIn} />;
 }

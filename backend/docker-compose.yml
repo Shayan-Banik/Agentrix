@@ -4,3 +4,30 @@ services:
     container_name: redis-container
     ports:
       - "6379:6379"
+
+# services:
+#   redis:
+#     image: redis:latest
+#     container_name: redis-container
+#     ports:
+#       - "6379:6379"
+
+#   gateway:
+#     build: ./gateway
+#     ports:
+#       - "8000:8000"
+
+#   auth:
+#     build: ./services/auth
+#     ports:
+#       - "8001:8001"
+
+#   chat:
+#     build: ./services/chat
+#     ports:
+#       - "8002:8002"
+
+#   agent:
+#     build: ./services/agent
+#     ports:
+#       - "8003:8003"

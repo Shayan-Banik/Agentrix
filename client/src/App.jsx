@@ -14,7 +14,6 @@ const App = () => {
       try {
         const user = await getCurrentUser();
         dispatch(setUserData(user));
-        console.log("Current user:", user);
       } catch (error) {
         console.error("Error fetching current user:", error);
       }

@@ -52,12 +52,20 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    const sessionID = req.cookies.session;
-    await redis.del(`session-${sessionID}`);
-    res.clearCookie("session");
-    res.status(200).json({ message: "Logout successful" });
+    const sessionID = req.cookies?.session;
+    if (sessionID) {
+      await redis.del(`session-${sessionID}`);
+    }
+
+    const isProduction = process.env.NODE_ENV === "production";
+    res.clearCookie("session", {
+      path: "/",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+    });
+    return res.status(200).json({ message: "Logout successful" });
   } catch (error) {
     console.error("Logout failed:", error);
-    res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Internal server error" });
   }
 };

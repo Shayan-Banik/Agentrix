@@ -8,24 +8,33 @@ import cookieParser from "cookie-parser";
 
 import { getCurrentUser } from "./controller/user.controller.js";
 import { authMiddleware } from "./middleware/auth.middleware.js";
+import { proxyWithHeaders } from "./utils/proxyWithHeader.js";
 
 const port = process.env.PORT || 8000;
 
 const app = express();
 
 app.use(morgan("dev"));
-app.use(cors({
+app.use(
+  cors({
     origin: process.env.FRONTEND_URL,
-    credentials:true
-}));
+    credentials: true,
+  }),
+);
+
 app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/auth", proxy(process.env.AUTH_SERVICE_URL));
+app.use(
+  "/api/chat",
+  authMiddleware,
+  proxyWithHeaders(process.env.CHAT_SERVICE_URL),
+);
+app.use("/api/agent", authMiddleware, proxy(process.env.AGENT_SERVICE_URL));
+
 app.get("/api/me", authMiddleware, getCurrentUser);
 
 app.listen(port, () => {
-    console.log(`Gateway is running on port ${port}`);
+  console.log(`Gateway is running on port ${port}`);
 });
-
-
