@@ -9,6 +9,7 @@ export default function ChatLayout({ user, onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(
     () => window.innerWidth >= 768,
   );
+  const [artifactOpen, setArtifactOpen] = useState(false);
   const {
     conversations,
     activeId,
@@ -69,11 +70,19 @@ export default function ChatLayout({ user, onLogout }) {
         onRegenerate={handleRegenerate}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen(true)}
-        onOpenArtifact={setArtifact}
-        activeArtifactId={artifact?.id}
+        onOpenArtifact={(selectedArtifact) => {
+          setArtifact(selectedArtifact);
+          setArtifactOpen(true);
+        }}
+        activeArtifactId={artifactOpen ? artifact?.id : undefined}
       />
 
-      <Artifact artifact={artifact} onClose={() => setArtifact(null)} />
+      <Artifact
+        artifact={artifact}
+        open={artifactOpen}
+        onOpen={() => setArtifactOpen(true)}
+        onClose={() => setArtifactOpen(false)}
+      />
     </div>
   );
 }

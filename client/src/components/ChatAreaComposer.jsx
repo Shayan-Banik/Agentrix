@@ -8,7 +8,10 @@ import {
   FiFileText,
   FiImage,
   FiMonitor,
+  FiSearch,
+  FiChevronDown,
 } from "react-icons/fi";
+import { SearchAGENTS } from "../constants/constants.js";
 
 const ACCEPT =
   "image/*,application/pdf,.pdf,.ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation";
@@ -47,7 +50,7 @@ function AttachmentChip({ item, onRemove }) {
           <Icon className="h-5 w-5" />
         </span>
       )}
-      <div className="min-w-0 max-w-[140px] text-left">
+      <div className="min-w-0 max-w-35 text-left">
         <p className="truncate text-xs font-medium text-slate-200">{item.file.name}</p>
         <p className="text-[11px] text-slate-500">{formatSize(item.file.size)}</p>
       </div>
@@ -69,9 +72,13 @@ function ChatAreaComposer({ onSend, onStop, loading }) {
   const [listening, setListening] = useState(false);
   const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState("auto");
+  const [agentSearch, setAgentSearch] = useState("");
+  const [agentPickerOpen, setAgentPickerOpen] = useState(false);
 
   const ref = useRef(null);
   const fileInputRef = useRef(null);
+  const agentSearchRef = useRef(null);
   const recognitionRef = useRef(null);
   const baseTextRef = useRef("");
 
@@ -82,6 +89,10 @@ function ChatAreaComposer({ onSend, onStop, loading }) {
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
   }, [value]);
+
+  useEffect(() => {
+    if (agentPickerOpen) agentSearchRef.current?.focus();
+  }, [agentPickerOpen]);
 
   // revoke image previews + stop mic on unmount
   const attachmentsRef = useRef(attachments);
@@ -189,10 +200,7 @@ function ChatAreaComposer({ onSend, onStop, loading }) {
   const submit = () => {
     if (!canSend || loading) return;
     if (listening) stopListening();
-    onSend?.(
-      value.trim(),
-      attachments.map((a) => a.file)
-    );
+    onSend?.(value.trim(), { agentMode: selectedAgent });
     attachments.forEach((a) => a.preview && URL.revokeObjectURL(a.preview));
     setAttachments([]);
     setValue("");
@@ -231,6 +239,11 @@ function ChatAreaComposer({ onSend, onStop, loading }) {
 
   const iconBtn =
     "grid h-9 w-9 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400";
+  const currentAgent =
+    SearchAGENTS.find((agent) => agent.id === selectedAgent) || SearchAGENTS[0];
+  const filteredAgents = SearchAGENTS.filter((agent) =>
+    agent.label.toLowerCase().includes(agentSearch.trim().toLowerCase())
+  );
 
   return (
     <div className="relative z-10 mx-auto w-full max-w-5xl px-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-4 sm:pb-4">
@@ -270,6 +283,79 @@ function ChatAreaComposer({ onSend, onStop, loading }) {
 
         <div className="mt-3 flex items-center justify-between">
           <div className="flex items-center gap-1">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setAgentPickerOpen((open) => !open);
+                  setAgentSearch("");
+                }}
+                aria-label={`Choose agent, currently ${currentAgent.label}`}
+                aria-expanded={agentPickerOpen}
+                aria-haspopup="listbox"
+                className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-medium text-slate-300 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+              >
+                <currentAgent.icon className="h-4 w-4 text-indigo-300" />
+                <span>{currentAgent.label}</span>
+                <FiChevronDown className="h-3.5 w-3.5 text-slate-500" />
+              </button>
+
+              {agentPickerOpen && (
+                <div className="absolute bottom-full left-0 z-20 mb-2 w-64 rounded-2xl border border-white/10 bg-[#151c2b] p-2 shadow-2xl shadow-black/50">
+                  <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3">
+                    <FiSearch className="h-4 w-4 shrink-0 text-slate-500" />
+                    <input
+                      ref={agentSearchRef}
+                      type="search"
+                      value={agentSearch}
+                      onChange={(event) => setAgentSearch(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") setAgentPickerOpen(false);
+                      }}
+                      placeholder="Search agents"
+                      aria-label="Search agents"
+                      className="h-10 min-w-0 flex-1 bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-500"
+                    />
+                  </label>
+
+                  <ul role="listbox" aria-label="Agents" className="mt-2 max-h-56 space-y-1 overflow-y-auto">
+                    {filteredAgents.map((agent) => {
+                      const Icon = agent.icon;
+                      const isSelected = agent.id === selectedAgent;
+                      return (
+                        <li key={agent.id}>
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={isSelected}
+                            onClick={() => {
+                              setSelectedAgent(agent.id);
+                              setAgentPickerOpen(false);
+                              setAgentSearch("");
+                            }}
+                            className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition ${
+                              isSelected
+                                ? "bg-indigo-400/15 text-indigo-100"
+                                : "text-slate-300 hover:bg-white/5 hover:text-white"
+                            }`}
+                          >
+                            <Icon className="h-4 w-4 shrink-0 text-indigo-300" />
+                            <span>{agent.label}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                    {filteredAgents.length === 0 && (
+                      <li className="px-3 py-3 text-sm text-slate-500">
+                        No agents found.
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/*// TODO: AWS S3 integrationn upload files */}
             <input
               ref={fileInputRef}
               type="file"
@@ -288,7 +374,7 @@ function ChatAreaComposer({ onSend, onStop, loading }) {
               title="Attach image, PDF or PPT"
               className={iconBtn}
             >
-              <FiPaperclip className="h-[18px] w-[18px]" />
+              <FiPaperclip className="h-4.5 w-4.5" />
             </button>
 
             <button
@@ -306,7 +392,7 @@ function ChatAreaComposer({ onSend, onStop, loading }) {
               {listening && (
                 <span className="absolute inset-0 animate-ping rounded-full bg-red-400/25" />
               )}
-              <FiMic className="relative h-[18px] w-[18px]" />
+              <FiMic className="relative h-4.5 w-4.5" />
             </button>
           </div>
 

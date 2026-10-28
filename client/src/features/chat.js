@@ -19,10 +19,17 @@ export const updateConversationTitle = (conversationId, title, options) =>
     options,
   );
 
-export const createMessage = (conversationId, role, content, options) =>
+export const createMessage = (
+  conversationId,
+  role,
+  content,
+  images,
+  artifacts,
+  options,
+) =>
   api.post(
     "/api/chat/create-messages",
-    { conversationId, role, content },
+    { conversationId, role, content, images, artifacts },
     options,
   );
 

@@ -12,7 +12,11 @@ import {
 import { DEFAULT_SUGGESTIONS, STARS } from "../constants/constants.js";
 import EmptyState from "./EmptyState.jsx";
 import ChatAreaComposer from "./ChatAreaComposer.jsx";
-
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Check, Copy } from "lucide-react";
+import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 const iconBtn =
   "rounded-lg p-1.5 text-slate-400 transition hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400";
 
@@ -84,9 +88,38 @@ function AgentSteps({ steps }) {
   );
 }
 
+function ImageGallery({ images }) {
+  if (!images?.length) return null;
+
+  return (
+    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {images.map((image, index) => (
+        <a
+          key={`${image.url}-${index}`}
+          href={image.url}
+          target="_blank"
+          rel="noreferrer"
+          className="group overflow-hidden rounded-xl border border-white/10 bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">
+          <img
+            src={image.url}
+            alt={image.title || `Image ${index + 1}`}
+            referrerPolicy="no-referrer"
+            loading="lazy"
+            className="aspect-square h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+          />
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function ArtifactCard({ artifact, active, onOpen }) {
   const label =
-    artifact.type === "html" ? "Web page" : artifact.language || "Code";
+    artifact.type === "project"
+      ? `${artifact.files?.length || 0} files`
+      : artifact.type === "html"
+        ? "Web page"
+        : artifact.language || "Code";
   return (
     <button
       type="button"
@@ -117,15 +150,18 @@ function AssistantMessage({
   activeArtifactId,
 }) {
   const [copied, setCopied] = useState(false);
+  const [copyCode, setCopyCode] = useState("");
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(message.content);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard unavailable */
-    }
+    await navigator.clipboard.writeText(message.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  const copyCodeSnippet = async (code) => {
+    await navigator.clipboard.writeText(code);
+    setCopyCode(code);
+    setTimeout(() => setCopyCode(""), 2500);
   };
 
   return (
@@ -139,9 +175,145 @@ function AssistantMessage({
         )}
         {message.steps?.length > 0 && <AgentSteps steps={message.steps} />}
 
-        <p className="break-words whitespace-pre-wrap text-[15px] leading-7 text-slate-200 [overflow-wrap:anywhere]">
-          {message.content}
-        </p>
+        <div className="wrap-break-words text-[15px] leading-7 text-slate-200 wrap:anywhere">
+          <Markdown
+            components={{
+              h1: ({ children }) => (
+                <h1 className="text-2xl font-bold mt-5 mb-3 text-white">
+                  {children}
+                </h1>
+              ),
+              h2: ({ children }) => (
+                <h2 className="text-xl font-semibold mt-4 mb-2 text-indigo-300">
+                  {children}
+                </h2>
+              ),
+              h3: ({ children }) => (
+                <h3 className="text-lg font-semibold mt-3 mb-1 text-violet-300">
+                  {children}
+                </h3>
+              ),
+              p: ({ children }) => (
+                <p className="mb-2 whitespace-pre-wrap text-slate-200 wrap-break-words">
+                  {children}
+                </p>
+              ),
+              a: ({ href, children }) => (
+                <a
+                  href={href}
+                  className="text-cyan-400 underline decoration-cyan-400/40 underline-offset-2 hover:text-cyan-300 transition-colors"
+                  target="_blank"
+                  rel="noopener noreferrer">
+                  {children}
+                </a>
+              ),
+              strong: ({ children }) => (
+                <strong className="font-semibold text-white">{children}</strong>
+              ),
+
+              code: ({ className, children }) => {
+                const value = String(children).trim();
+
+                if (!className) {
+                  return (
+                    <code className="bg-white/10 text-pink-300 rounded px-1.5 py-0.5 text-sm">
+                      {value}
+                    </code>
+                  );
+                }
+                const language = className?.replace("language-", "");
+                return (
+                  <div className="my-4 overflow-hidden rounded-xl border border-white/10 bg-[#111318] ">
+                    <div className="flex items-center justify-between bg-[#1b1d24] border-b border-white/10 px-4 py-2 ">
+                      <span className="uppercase text-xs text-slate-400">
+                        {language}
+                      </span>
+                      <button
+                        className="flex items-center gap-1 text-xs "
+                        onClick={() => copyCodeSnippet(value)}>
+                        {copyCode === value ? (
+                          <>
+                            <Check size={14} /> Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={14} /> copy{" "}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <SyntaxHighlighter
+                      language={language}
+                      style={oneDark}
+                      wrapLongLines
+                      showLineNumbers={value.split("\n").length > 5}
+                      customStyle={{
+                        margin: 0,
+                        padding: "16px",
+                        background: "#0d1117",
+                        fontSize: "13px",
+                        lineHeight: 1.6,
+                      }}
+                      codeTagProps={{
+                        style: {
+                          background: "transparent",
+                          fontFamily:
+                            "'JetBrains Mono', 'Fira Code', ui-monospace, monospace",
+                        },
+                      }}
+                      lineNumberStyle={{
+                        minWidth: "2.5em",
+                        paddingRight: "1em",
+                        color: "#484f58",
+                        userSelect: "none",
+                      }}>
+                      {value}
+                    </SyntaxHighlighter>
+                  </div>
+                );
+              },
+
+              blockquote: ({ children }) => (
+                <blockquote className="border-l-4 border-amber-400 bg-white/5 rounded-r pl-4 py-1 italic text-slate-300">
+                  {children}
+                </blockquote>
+              ),
+              ul: ({ children }) => (
+                <ul className="list-disc list-inside mb-2 marker:text-indigo-400">
+                  {children}
+                </ul>
+              ),
+              ol: ({ children }) => (
+                <ol className="list-decimal list-inside mb-2 marker:text-indigo-400">
+                  {children}
+                </ol>
+              ),
+              li: ({ children }) => (
+                <li className="mb-1 text-slate-200">{children}</li>
+              ),
+              table: ({ children }) => (
+                <table className="mb-2 border border-white/10 text-sm">
+                  {children}
+                </table>
+              ),
+              th: ({ children }) => (
+                <th className="border border-white/10 bg-white/5 px-3 py-1 text-left text-slate-200">
+                  {children}
+                </th>
+              ),
+              td: ({ children }) => (
+                <td className="border border-white/10 px-3 py-1 text-slate-200">
+                  {children}
+                </td>
+              ),
+              hr: () => <hr className="my-4 border-t border-white/10" />,
+            }}
+            remarkPlugins={[remarkGfm]}>
+            {message.content}
+          </Markdown>
+        </div>
+
+        <ImageGallery images={message.images} />
 
         {message.artifact && (
           <ArtifactCard
@@ -181,7 +353,7 @@ function AssistantMessage({
 function UserMessage({ message }) {
   return (
     <div className="flex justify-end">
-      <p className="max-w-[85%] break-words whitespace-pre-wrap rounded-3xl border border-white/5 bg-[#1b2336] px-4 py-2.5 text-[15px] leading-7 text-slate-100 [overflow-wrap:anywhere]">
+      <p className="max-w-[85%] wrap-break-words whitespace-pre-wrap rounded-3xl border border-white/5 bg-[#1b2336] px-4 py-2.5 text-[15px] leading-7 text-slate-100 wrap:anywhere">
         {message.content}
       </p>
     </div>
@@ -244,7 +416,7 @@ export default function ChatArea({
         }}>
         <Starfield />
 
-        <header         className="relative z-10 flex h-12 shrink-0 items-center gap-1.5 px-2 sm:h-14 sm:gap-2 sm:px-3">
+        <header className="relative z-10 flex h-12 shrink-0 items-center gap-1.5 px-2 sm:h-14 sm:gap-2 sm:px-3">
           <button
             type="button"
             onClick={onToggleSidebar}
@@ -252,7 +424,7 @@ export default function ChatArea({
             className={`${iconBtn} p-2 ${sidebarOpen ? "md:hidden" : ""}`}>
             <FiMenu className="h-5 w-5" />
           </button>
-          
+
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="relative flex h-2 w-2 shrink-0">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400/60" />

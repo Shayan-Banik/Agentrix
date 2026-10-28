@@ -14,10 +14,15 @@
     "@tailwindcss/vite": "^4.3.3",
     "axios": "^1.20.0",
     "firebase": "^13.0.0",
+    "lucide-react": "^1.62.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-icons": "^5.7.0",
+    "react-markdown": "^10.1.0",
     "react-redux": "^9.3.0",
+    "react-syntax-highlighter": "^16.1.2",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {

@@ -4,5 +4,11 @@ export const agentState = Annotation.Root({
   prompt: Annotation(),
   aiResponse: Annotation(),
   agent: Annotation(),
+  agentMode: Annotation(),
+  timezone: Annotation(),
   conversationId: Annotation(),
+  //Agents
+  searchResults: Annotation(),
+  images: Annotation(),
+  artifacts: Annotation(),
 });

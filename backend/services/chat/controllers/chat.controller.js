@@ -29,11 +29,13 @@ export const getConversations = async (req, res) => {
 
 export const createMessages = async (req, res) => {
   try {
-    const { conversationId, role, content } = req.body;
+    const { conversationId, role, content, images, artifacts } = req.body;
     const message = await Message.create({
       conversationId: conversationId,
       role: role,
       content: content,
+      images: images,
+      artifacts: artifacts,
     });
     res.status(200).json(message);
   } catch (error) {

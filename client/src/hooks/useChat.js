@@ -22,11 +22,40 @@ import {
 } from "../features/chat.js";
 import { sendAgentMessage } from "../features/agent.js";
 
-function artifactFromResponse(content, messageId) {
-  const codeBlock = content.match(/```([a-zA-Z0-9_+-]*)\s*\n([\s\S]*?)```/);
-  if (!codeBlock) return null;
+function fileDetails(file, index = 0) {
+  const name = typeof file?.name === "string" ? file.name : `file-${index + 1}.txt`;
+  const extension = name.split(".").pop()?.toLowerCase() || "txt";
+  return {
+    name,
+    content: typeof file?.content === "string" ? file.content : String(file?.content ?? ""),
+    language: extension,
+  };
+}
 
-  const language = codeBlock[1].toLowerCase();
+function normalizeArtifact(responseArtifact, messageId, index = 0) {
+  if (!responseArtifact) return null;
+
+  if (typeof responseArtifact === "string") {
+    const codeBlock = responseArtifact.match(/```([a-zA-Z0-9_+-]*)\s*\n([\s\S]*?)```/);
+    if (!codeBlock) return null;
+    responseArtifact = { type: codeBlock[1] || "code", content: codeBlock[2] };
+  }
+
+  const files = Array.isArray(responseArtifact.files)
+    ? responseArtifact.files.map(fileDetails).filter((file) => file.name)
+    : [];
+  if (files.length > 0) {
+    return {
+      id: `${messageId}-artifact-${index}`,
+      title: responseArtifact.name || "Generated project",
+      type: "project",
+      files,
+    };
+  }
+
+  const language = String(
+    responseArtifact.language || responseArtifact.type || "text",
+  ).toLowerCase();
   const type =
     language === "html"
       ? "html"
@@ -34,12 +63,21 @@ function artifactFromResponse(content, messageId) {
         ? "markdown"
         : "code";
   return {
-    id: `${messageId}-artifact`,
-    title: type === "html" ? "Generated webpage" : "Generated code",
+    id: `${messageId}-artifact-${index}`,
+    title: responseArtifact.title || (type === "html" ? "Generated webpage" : "Generated code"),
     type,
-    language: language || "text",
-    content: codeBlock[2],
+    language,
+    content: typeof responseArtifact.content === "string" ? responseArtifact.content : "",
   };
+}
+
+function artifactFromResponse(content, messageId, responseArtifacts) {
+  const artifacts = Array.isArray(responseArtifacts)
+    ? responseArtifacts
+    : responseArtifacts
+      ? [responseArtifacts]
+      : [content];
+  return artifacts.map((item, index) => normalizeArtifact(item, messageId, index)).find(Boolean) || null;
 }
 
 export default function useChat() {
@@ -105,9 +143,20 @@ export default function useChat() {
               ...message,
               id: message._id || message.id,
               content: message.content || "",
+              images: Array.isArray(message.images)
+                ? message.images
+                    .map((image) =>
+                      typeof image === "string" ? { url: image } : image,
+                    )
+                    .filter((image) => /^https?:\/\//i.test(image.url || ""))
+                : [],
               artifact:
                 message.role === "assistant"
-                  ? artifactFromResponse(message.content || "", message._id || message.id)
+                  ? artifactFromResponse(
+                      message.content || "",
+                      message._id || message.id,
+                      message.artifacts,
+                    )
                   : undefined,
             })),
         ));
@@ -122,7 +171,10 @@ export default function useChat() {
     return () => controller.abort();
   }, [activeId, dispatch]);
 
-  const handleSend = async (text, { regenerate = false } = {}) => {
+  const handleSend = async (
+    text,
+    { regenerate = false, agentMode = "auto" } = {},
+  ) => {
     if (chatLoading || requestRef.current) return;
     const navigationAtStart = navigationRef.current;
     let conversationId = activeIdRef.current;
@@ -169,6 +221,7 @@ export default function useChat() {
         text,
         conversationId,
         !regenerate,
+        agentMode,
         { signal: controller.signal },
       );
       const content =
@@ -183,23 +236,32 @@ export default function useChat() {
         role: "assistant",
         content,
         agent: typeof data === "object" ? data.agent : undefined,
+        images:
+          typeof data === "object" && Array.isArray(data.images)
+            ? data.images.filter((image) => /^https?:\/\//i.test(image?.url || ""))
+            : undefined,
         steps: typeof data === "object" ? data.steps : undefined,
         artifact:
-          artifactFromResponse(content, assistantId) ||
-          (typeof data === "object" ? data.artifact : undefined),
+          typeof data === "object"
+            ? artifactFromResponse(content, assistantId, data.artifacts || data.artifact)
+            : artifactFromResponse(content, assistantId),
       };
 
-      try {
-        const { data: savedMessage } = await createMessage(
-          conversationId,
-          "assistant",
-          content,
-          { signal: controller.signal },
-        );
-        assistantMessage.id = savedMessage._id || assistantMessage.id;
-      } catch (err) {
-        console.error("Unable to save assistant response:", err);
-        setChatError("The response was generated, but could not be saved to conversation history.");
+      if (regenerate) {
+        try {
+          const { data: savedMessage } = await createMessage(
+            conversationId,
+            "assistant",
+            content,
+            assistantMessage.images,
+            typeof data === "object" ? data.artifacts : undefined,
+            { signal: controller.signal },
+          );
+          assistantMessage.id = savedMessage._id || assistantMessage.id;
+        } catch (err) {
+          console.error("Unable to save assistant response:", err);
+          setChatError("The response was generated, but could not be saved to conversation history.");
+        }
       }
       if (activeIdRef.current === conversationId) {
         dispatch(addMessage(assistantMessage));

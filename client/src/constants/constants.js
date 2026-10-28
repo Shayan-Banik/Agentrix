@@ -1,3 +1,5 @@
+import { Zap, Code2, MessageSquare, FileText, Presentation, ImageIcon, Globe } from "lucide-react";
+
 export const APP_NAME = "Agentrix";
 export const AGENTS = ["Planner", "Researcher", "Coder"];
 
@@ -54,4 +56,42 @@ export const STARS = [
   [72, 68, 2, 0.4],
   [52, 78, 2, 0.4],
   [5, 84, 2, 0.3],
+];
+
+export const SearchAGENTS = [
+  {
+    id:"auto",
+    icon: Zap,
+    label: "Auto",
+  },
+  {
+    id:"chat",
+    icon: MessageSquare,
+    label: "Chat",
+  },
+  {
+    id:"coding",
+    icon: Code2,
+    label: "Coding",
+  },
+  {
+    id: "pdf",
+    icon: FileText,
+    label: "PDF",
+  },
+  {
+    id: "ppt",
+    icon: Presentation,
+    label: "PPT",
+  },
+  {
+    id: "image",
+    icon: ImageIcon,
+    label: "Image",
+  },
+  {
+    id: "search",
+    icon: Globe,
+    label: "Search",
+  }
 ];
