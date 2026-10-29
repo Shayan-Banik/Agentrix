@@ -2,8 +2,16 @@ import axios from "axios";
 import { graph } from "../graph/graph.js";
 import { addMessages } from "../config/memory.js";
 import redis from "../../../shared/redis/redis.js";
+import { agentRegistry, getAgentOptions, resolveAgentId } from "../agents/registry.js";
 
-const AGENT_MODES = new Set(["auto", "chat", "coding", "search", "pdf", "ppt", "image"]);
+const AGENT_MODES = new Set([
+  "auto",
+  ...Object.keys(agentRegistry),
+  ...Object.values(agentRegistry).flatMap((agent) => agent.aliases || []),
+]);
+
+export const listAgents = (_req, res) =>
+  res.status(200).json({ agents: getAgentOptions() });
 
 export const agent = async (req, res) => {
   try {
@@ -35,7 +43,7 @@ export const agent = async (req, res) => {
     const result = await graph.invoke({
       prompt: prompt,
       conversationId: conversationId,
-      agentMode,
+      agentMode: agentMode === "auto" ? agentMode : resolveAgentId(agentMode),
       timezone,
     });
 
@@ -69,7 +77,9 @@ export const agent = async (req, res) => {
     const status = error?.status || error?.statusCode || error?.response?.status;
     const insufficientBalance =
       status === 402 || /insufficient balance/i.test(String(error?.message || error));
-    const message = insufficientBalance
+    const message = error?.provider === "Pollinations"
+      ? error.message
+      : insufficientBalance
       ? "The active AI provider has insufficient balance. Please add credits or configure another provider."
       : `agent error ${error?.message || error}`;
     return res.status(insufficientBalance ? 502 : 500).json({ message });

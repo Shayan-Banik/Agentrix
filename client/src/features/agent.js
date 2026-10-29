@@ -1,5 +1,8 @@
 import api from "../utils/axios.js";
 
+export const getAvailableAgents = (options) =>
+  api.get("/api/agent/agents", options);
+
 export const sendAgentMessage = (
   prompt,
   conversationId,

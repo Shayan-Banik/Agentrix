@@ -273,6 +273,18 @@ function AssistantMessage({
                 );
               },
 
+              img:({src}) => {
+                if(!src) return null;
+                return (
+                  <img
+                    src={src}
+                    alt="image"
+                    loading="lazy"
+                    className="w-60 h-50 my-4 rounded-xl border border-white/10"
+                  />
+                )
+              },
+
               blockquote: ({ children }) => (
                 <blockquote className="border-l-4 border-amber-400 bg-white/5 rounded-r pl-4 py-1 italic text-slate-300">
                   {children}
