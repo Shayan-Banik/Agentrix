@@ -3,7 +3,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://YOUR-GATEWAY.onrender.com/api/:path*"
+      "destination": "https://agentrix-gateway-ps6e.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
