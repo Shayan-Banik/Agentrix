@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "npm ci --prefix ../.. && npm ci",
+    "build": "npm ci --prefix .. && npm ci",
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
