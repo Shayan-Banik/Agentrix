@@ -6,6 +6,14 @@
       "destination": "https://agentrix-eniw.onrender.com/:path*"
     },
     {
+      "source": "/api/agent/agents",
+      "destination": "https://agentrix-agent.onrender.com/agents"
+    },
+    {
+      "source": "/api/chat/:path*",
+      "destination": "https://agentrix-gateway-ps6e.onrender.com/api/chat/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://agentrix-gateway-ps6e.onrender.com/api/:path*"
     },
