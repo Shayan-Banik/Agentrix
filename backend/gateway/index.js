@@ -1,6 +1,5 @@
 import express from "express";
-import dotenv from "dotenv";
-dotenv.config();
+import "dotenv/config";
 import morgan from "morgan";
 import cors from "cors";
 import proxy from "express-http-proxy";
@@ -11,19 +10,43 @@ import { authMiddleware } from "./middleware/auth.middleware.js";
 import { proxyWithHeaders } from "./utils/proxyWithHeader.js";
 
 const port = process.env.PORT || 8000;
+const configuredFrontendOrigins = (process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+if (
+  process.env.NODE_ENV === "production" &&
+  configuredFrontendOrigins.length === 0
+) {
+  throw new Error("FRONTEND_URL is not configured");
+}
+
+const frontendOrigins = configuredFrontendOrigins.length
+  ? configuredFrontendOrigins
+  : ["http://localhost:5173"];
 
 const app = express();
 
 app.use(morgan("dev"));
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: (origin, callback) => {
+      if (!origin || frontendOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     credentials: true,
   }),
 );
 
 app.use(express.json());
 app.use(cookieParser());
+
+app.get("/health", (_req, res) => {
+  res.status(200).json({ status: "ok" });
+});
 
 app.use("/api/auth", proxy(process.env.AUTH_SERVICE_URL));
 app.use(
